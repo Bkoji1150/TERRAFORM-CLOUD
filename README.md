@@ -1,84 +1,6 @@
 # AWS Auto Scaling Group (ASG) Terraform module for HQR
 
-Terraform module which creates Auto Scaling resources on AWS.
-
-Available features
-
-- Autoscaling group with launch configuration - either created by the module or utilizing an existing launch configuration
-- Autoscaling group with launch template - either created by the module or utilizing an existing launch template
-- Autoscaling group utilizing mixed instances policy
-- Ability to configure autoscaling groups to set instance refresh configuration and add lifecycle hooks
-- Ability to configure autoscaling policies
-
-
-## Conditional creation
-
-The following combinations are supported to conditionally create resources and/or use externally created resources within the module:
-
-- Disable resource creation (no resources created):
-
-```hcl
-  create_asg = false
-```
-
-- Create only a launch configuration:
-
-```hcl
-  create_asg = false
-  create_lc  = true
-```
-
-- Create only a launch template:
-
-```hcl
-  create_asg = false
-  create_lt  = true
-```
-
-- Create both the autoscaling group and launch configuration:
-
-```hcl
-  use_lc    = true
-  create_lc = true
-```
-
-- Create both the autoscaling group and launch template:
-
-```hcl
-  use_lt    = true
-  create_lt = true
-```
-
-- Create the autoscaling group using an externally created launch configuration:
-
-```hcl
-  use_lc               = true
-  launch_configuration = aws_launch_configuration.my_launch_config.name
-```
-
-- Create the autoscaling group using an externally created launch template:
-
-```hcl
-  use_lt          = true
-  launch_template = aws_launch_template.my_launch_template.name
-```
-
-- Create the autoscaling policies:
-
-```
-  scaling_policies = {
-    my-policy = {
-      policy_type               = "TargetTrackingScaling"
-      target_tracking_configuration = {
-        predefined_metric_specification = {
-          predefined_metric_type = "ASGAverageCPUUtilization"
-          resource_label         = "MyLabel"
-        }
-        target_value = 50.0
-      }
-    }
-  }
-```
+Terraform module which creates Auto Scaling resources on HQR.
 
 - [Complete](https://github.com/terraform-aws-modules/terraform-aws-autoscaling/tree/master/examples/complete) - Creates several variations of resources for autoscaling groups, launch templates, launch configurations.
 
@@ -133,8 +55,4 @@ No outputs.
 
 ## Authors
 
-Module is maintained by [Anton Babenko](https://github.com/antonbabenko) with help from [these awesome contributors](https://github.com/terraform-aws-modules/terraform-aws-autoscaling/graphs/contributors).
-
-## License
-
-Apache 2 Licensed. See [LICENSE](https://github.com/terraform-aws-modules/terraform-aws-autoscaling/tree/master/LICENSE) for full details.
+Module is maintained by [kOJI BELLO](https://github.com/antonbabenko) with help from [these awesome contributors](https://github.com/terraform-aws-modules/terraform-aws-autoscaling/graphs/contributors).
