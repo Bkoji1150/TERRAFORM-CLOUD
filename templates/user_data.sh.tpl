@@ -62,24 +62,24 @@ sudo pip3 install awscli boto3 botocore --upgrade --user
 sudo pip3 install awscli boto3 botocore --upgrade --user
 #export PATH=/usr/local/bin:$PATH
 # install taraform 
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-sudo yum -y install terraform
-aws ssm get-parameters \
-    --output=text \
-    --region us-east-1 \
-    --with-decryption \
-    --names jenkins-agent-bootstrap-ssh-key \
-    --query "Parameters[*].{Value:Value}[0].Value" > /var/ansible/private-key
-chmod 0600 /var/ansible/private-key
-eval "$(ssh-agent -s)"
-ssh-add /var/ansible/private-key
-export ANSIBLE_CONFIG=/var/ansible/ansible.cfg
-export ANSIBLE_LOG_PATH=/var/ansible/bootstrap.log
-echo -e "[default]\nlog_path=/var/ansible/bootstrap.log" > /var/ansible/ansible.cfg
-ansible-pull site.yml \
-    --accept-host-key \
-    -U git@github.com:Bkoji1150/cw-misc-jenkins-agents-misc-ans.git \
-    -C "tags/v0.6.0" \
-    -e cwa_config_param=${cwa_config_param} \
-    -d /var/ansible/cw-misc-jenkins-agents-misc-ans
+# sudo yum install -y yum-utils
+# sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+# sudo yum -y install terraform
+# aws ssm get-parameters \
+#     --output=text \
+#     --region us-east-1 \
+#     --with-decryption \
+#     --names jenkins-agent-bootstrap-ssh-key \
+#     --query "Parameters[*].{Value:Value}[0].Value" > /var/ansible/private-key
+# chmod 0600 /var/ansible/private-key
+# eval "$(ssh-agent -s)"
+# ssh-add /var/ansible/private-key
+# export ANSIBLE_CONFIG=/var/ansible/ansible.cfg
+# export ANSIBLE_LOG_PATH=/var/ansible/bootstrap.log
+# echo -e "[default]\nlog_path=/var/ansible/bootstrap.log" > /var/ansible/ansible.cfg
+# ansible-pull site.yml \
+#     --accept-host-key \
+#     -U git@github.com:Bkoji1150/cw-misc-jenkins-agents-misc-ans.git \
+#     -C "tags/v0.6.0" \
+#     -e cwa_config_param=${cwa_config_param} \
+#     -d /var/ansible/cw-misc-jenkins-agents-misc-ans
