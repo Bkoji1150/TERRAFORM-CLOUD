@@ -79,7 +79,7 @@ export ANSIBLE_LOG_PATH=/var/ansible/bootstrap.log
 echo -e "[default]\nlog_path=/var/ansible/bootstrap.log" > /var/ansible/ansible.cfg
 ansible-pull site.yml \
     --accept-host-key \
-    -U git@qnetgit.cms.gov:Bellese/cw-misc-jenkins-agents-misc-ans.git \
+    -U git@github.com:Bkoji1150/cw-misc-jenkins-agents-misc-ans.git \
     -C "tags/v0.6.0" \
     -e cwa_config_param=${cwa_config_param} \
     -d /var/ansible/cw-misc-jenkins-agents-misc-ans

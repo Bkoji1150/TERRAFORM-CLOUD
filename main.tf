@@ -1,7 +1,7 @@
 
 locals {
   tags = {
-    name                    = "JenkinsMaster"
+    name                    = "Jenkinsagent"
     Created_by              = "Terraform"
     App_Name                = "ovid"
     Cost_center             = "xyz222"
