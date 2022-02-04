@@ -23,10 +23,10 @@ pipeline {
     stage("Downloading Code") {
       steps {
         git changelog: false,
-            credentialsId: 'bitbucket-devops',
+            // credentialsId: 'bitbucket-devops',
             poll: false,
             url: 'https://github.com/Bkoji1150/hqr-auto-scaling-terraform.git',
-            branch: "${BRANCH}"
+           
      }
     }
     stage('Initializing Terraform') {
@@ -37,8 +37,8 @@ pipeline {
            #
            # turn output off for token operations
            #
-           set +x
-           mkdir -p tokens
+        //    set +x
+        //    mkdir -p tokens
            # echo ${VAULT_ROOT_TOKEN} > tokens/${TFE_WORKSPACE}.token
            #
            # output back on
