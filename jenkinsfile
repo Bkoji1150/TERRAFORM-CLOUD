@@ -25,7 +25,7 @@ pipeline {
         git changelog: false,
             credentialsId: 'bitbucket-devops',
             poll: false,
-            url: 'https://github.com/Bkoji1150/hqr-auto-scaling-terraform.git/tags/v3.7.10',
+            url: 'https://github.com/Bkoji1150/hqr-auto-scaling-terraform.git',
             branch: "${BRANCH}"
      }
     }
