@@ -12,64 +12,91 @@ locals {
   }
 }
 
-resource "aws_iam_policy" "ec2_policy" {
-  name        = "ec2_policy"
-  path        = "/"
-  description = "Policy to provide permission to EC2"
-  # Terraform's "jsonencode" function converts a
-  # Terraform expression result to valid JSON syntax.
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "application-autoscaling:*",
-          "autoscaling:*",
-          "apigateway:*",
-          "cloudfront:*",
-          "cloudwatch:*",
-          "cloudformation:*",
-          "dax:*",
-          "dynamodb:*",
-          "ec2:*",
-          "ec2messages:*",
-          "ecr:*",
-          "ecs:*",
-          "elasticfilesystem:*",
-          "elasticache:*",
-          "elasticloadbalancing:*",
-          "es:*",
-          "events:*",
-          "iam:*",
-          "kms:*",
-          "lambda:*",
-          "logs:*",
-          "rds:*",
-          "route53:*",
-          "ssm:*",
-          "ssmmessages:*",
-          "s3:*",
-          "sns:*",
-          "sqs:*",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:CreateNetworkInterface",
-          "ec2:DeleteNetworkInterface",
-          "ec2:DescribeInstances",
-          "ec2:AttachNetworkInterface"
-        ],
-        Resource = "*"
-      },
-      {
-        "Effect" : "Allow",
-        "Action" : "*",
-        "Resource" : "*"
-      }
+data "aws_ami" "jenkins_golden_image" {
+  most_recent = true
+  owners      = ["self"]
+
+  tags = {
+    Name       = "Jenkins_agent_ami"
+    Created_by = "Terraform"
+  }
+}
+
+
+
+data "aws_iam_policy_document" "jenkins_agent_policy" {
+
+  statement {
+    sid    = "AllowSpecifics"
+    effect = "Allow"
+    resources = [
+      aws_launch_template.launch_template.arn
     ]
-  })
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "application-autoscaling:*",
+      "autoscaling:*",
+      "apigateway:*",
+      "cloudfront:*",
+      "cloudwatch:*",
+      "cloudformation:*",
+      "dax:*",
+      "dynamodb:*",
+      "ec2:*",
+      "ec2messages:*",
+      "ecr:*",
+      "ecs:*",
+      "elasticfilesystem:*",
+      "elasticache:*",
+      "elasticloadbalancing:*",
+      "es:*",
+      "events:*",
+      "iam:*",
+      "kms:*",
+      "lambda:*",
+      "logs:*",
+      "rds:*",
+      "route53:*",
+      "ssm:*",
+      "ssmmessages:*",
+      "s3:*",
+      "sns:*",
+      "sqs:*",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:CreateNetworkInterface",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeInstances",
+      "ec2:AttachNetworkInterface"
+    ]
+  }
+  statement {
+    sid    = "DenySpecifics"
+    effect = "Deny"
+    resources = [
+      aws_launch_template.launch_template.arn
+    ]
+    actions = [
+      "aws-marketplace-management:*",
+      "aws-marketplace:*",
+      "aws-portal:*",
+      "budgets:*",
+      "config:*",
+      "directconnect:*",
+      "ec2:*ReservedInstances*",
+      "iam:*Group*",
+      "iam:*Login*",
+      "iam:*Provider*",
+      "iam:*User*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "ec2_policy" {
+  name   = "example_policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.jenkins_agent_policy.json
 }
 
 resource "aws_iam_policy_attachment" "ec2_policy_role" {
@@ -86,8 +113,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 resource "aws_iam_role" "ec2_role" {
   name = "Jenkins-instance-role"
 
-  # Terraform's "jsonencode" function converts a
-  # Terraform expression result to valid JSON syntax.
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -103,12 +128,6 @@ resource "aws_iam_role" "ec2_role" {
   })
 }
 
-
-resource "aws_key_pair" "key" {
-  key_name   = "id_rsa"
-  public_key = file(var.public_key_path)
-}
-
 resource "aws_ssm_parameter" "cloudwatch_agent" {
 
   name        = "jenkins"
@@ -116,20 +135,17 @@ resource "aws_ssm_parameter" "cloudwatch_agent" {
   type        = "String"
   tier        = "Standard"
   data_type   = "text"
-  value       = file("./cloudwatch-config.json")
-  tags        = local.tags
+  value       = file("templates/cloudwatch-config.json")
 }
 
 resource "aws_launch_template" "launch_template" {
   name_prefix            = "hqr-jenkins-agent-lt-"
-  image_id               = var.ami
+  image_id               = data.aws_ami.jenkins_golden_image.id
   instance_type          = var.instance_type
   update_default_version = true
   ebs_optimized          = true
   iam_instance_profile {
-    # Should be: arn:aws:iam::354979567826:instance-profile/EC2-Hostname
-    # Needs more permissions until all libraries use the new pipeline or
-    # are updated to use the IAM User
+
     arn = aws_iam_instance_profile.ec2_profile.arn
   }
   monitoring {
@@ -143,15 +159,12 @@ resource "aws_launch_template" "launch_template" {
     resource_type = "volume"
     tags          = local.tags
   }
-  # vpc_security_group_ids = flatten([
-  #   data.aws_security_groups.agent_mgt_sg.ids,
-  #   aws_security_group.allow_jenkins_cje.id
-  # ])
+
   user_data = base64encode(
     templatefile(
       "./templates/user_data.sh.tpl",
       {
-        # "ansible_version"  = var.ansible_playbook_version,
+        "ansible_version"  = var.ansible_version,
         "cwa_config_param" = aws_ssm_parameter.cloudwatch_agent.name
       }
     )
@@ -177,11 +190,5 @@ resource "aws_autoscaling_group" "asg" {
     [for k, v in local.tags : v != null ? { "key" = k, "value" = v, "propagate_at_launch" = true } : {}],
     [{ "key" = "Name", "value" = "jenkins-build-agent", "propagate_at_launch" = true }]
   ])
-  enabled_metrics = [
-    "GroupDesiredCapacity", "GroupInServiceCapacity", "GroupPendingCapacity",
-    "GroupMinSize", "GroupMaxSize", "GroupInServiceInstances", "GroupPendingInstances",
-    "GroupStandbyInstances", "GroupStandbyCapacity", "GroupTerminatingCapacity",
-    "GroupTerminatingInstances", "GroupTotalCapacity", "GroupTotalInstances"
-  ]
-  # service_linked_role_arn =
+  enabled_metrics = var.enabled_metrics
 }
