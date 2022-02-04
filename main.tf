@@ -30,7 +30,7 @@ data "aws_iam_policy_document" "jenkins_agent_policy" {
     sid    = "AllowSpecifics"
     effect = "Allow"
     resources = [
-      aws_launch_template.launch_template.arn
+      "*"
     ]
     actions = [
       "logs:CreateLogGroup",
@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "jenkins_agent_policy" {
     sid    = "DenySpecifics"
     effect = "Deny"
     resources = [
-      aws_launch_template.launch_template.arn
+      "*"
     ]
     actions = [
       "aws-marketplace-management:*",
