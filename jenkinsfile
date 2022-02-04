@@ -1,0 +1,91 @@
+def performAction() {
+  try {
+    sh """
+       echo 'Performing Terraform ${ACTION}'
+       terraform ${ACTION} --auto-approve -no-color
+       """
+  } catch (e) {
+    sh """
+       echo 'Performing Terraform ${ACTION} Again'
+       terraform ${ACTION} --auto-approve -no-color
+       """
+  }
+}
+ 
+pipeline {
+  agent any
+ 
+  options {
+    disableConcurrentBuilds()
+  }
+ 
+  stages {
+    stage("Downloading Code") {
+      steps {
+        git changelog: false,
+            credentialsId: 'bitbucket-devops',
+            poll: false,
+            url: 'https://github.com/Bkoji1150/hqr-auto-scaling-terraform.git/tags/v3.7.10',
+            branch: "${BRANCH}"
+     }
+    }
+    stage("Configuring Autovars") {
+      steps {
+        sh """
+           rm -rf ${WORKSPACE}/environments/*.auto.tfvars
+           rm -rf ${WORKSPACE}/*.auto.tfvars
+           cp ${WORKSPACE}/environments/${TFE_WORKSPACE}.tfvars ${WORKSPACE}/${TFE_WORKSPACE}.auto.tfvars
+           """
+      }
+    }
+    stage('Initializing Terraform') {
+      steps {
+        sh """
+          
+           echo 'Using TFE Workspace: ${TFE_WORKSPACE}'
+           #
+           # turn output off for token operations
+           #
+           set +x
+           mkdir -p tokens
+           echo ${VAULT_ROOT_TOKEN} > tokens/${TFE_WORKSPACE}.token
+           #
+           # output back on
+           #
+           set -x
+           echo 'Performing Terraform Init'
+           terraform init -no-color -input=false || true
+           terraform workspace select ${TFE_WORKSPACE}
+           """
+      }
+    }
+ 
+    stage('Running Terraform Plan') {
+      steps {
+        sh """
+           echo 'Performing Terraform Plan'
+           [ "${ACTION}" = "destroy" ] && terraform plan -no-color -destroy || terraform plan -no-color
+           """
+      }
+    }
+   
+    stage("Apply Confirmation") {
+      steps{
+        input 'Proceed to apply?'
+      }
+    }
+    stage('Running Terraform Apply') {
+      steps {
+        script {
+          performAction()
+        }
+      }
+    }
+  }
+  post {
+    always {
+      echo "Cleaning up directory"
+      // deleteDir() // Uncomment this if you need to clean your workspace
+    }
+  } // post ends
+}

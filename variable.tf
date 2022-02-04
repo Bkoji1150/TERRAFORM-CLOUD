@@ -33,7 +33,7 @@ variable "instance_type" {
 
 variable "ansible_version" {
   description = "version of the playbook that would be run againt the agent"
-  default     = "3.7.10"
+  default     = "tags/v3.7.10"
 }
 
 variable "enabled_metrics" {
