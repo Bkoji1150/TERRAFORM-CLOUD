@@ -1,16 +1,16 @@
-def performAction() {
-  try {
-    sh """
-       echo 'Performing Terraform ${ACTION}'
-       terraform ${ACTION} --auto-approve -no-color
-       """
-  } catch (e) {
-    sh """
-       echo 'Performing Terraform ${ACTION} Again'
-       terraform ${ACTION} --auto-approve -no-color
-       """
-  }
-}
+// def performAction() {
+//   try {
+//     sh """
+//        echo 'Performing Terraform ${ACTION}'
+//        terraform ${ACTION} --auto-approve -no-color
+//        """
+//   } catch (e) {
+//     sh """
+//        echo 'Performing Terraform ${ACTION} Again'
+//        terraform ${ACTION} --auto-approve -no-color
+//        """
+//   }
+// }
  
 pipeline {
   agent any
@@ -29,58 +29,51 @@ pipeline {
             branch: "${BRANCH}"
      }
     }
-    stage("Configuring Autovars") {
-      steps {
-        sh """
-           rm -rf ${WORKSPACE}/environments/*.auto.tfvars
-           rm -rf ${WORKSPACE}/*.auto.tfvars
-           cp ${WORKSPACE}/environments/${TFE_WORKSPACE}.tfvars ${WORKSPACE}/${TFE_WORKSPACE}.auto.tfvars
-           """
-      }
-    }
     stage('Initializing Terraform') {
       steps {
         sh """
           
-           echo 'Using TFE Workspace: ${TFE_WORKSPACE}'
+           #echo 'Using TFE Workspace: ${TFE_WORKSPACE}'
            #
            # turn output off for token operations
            #
            set +x
            mkdir -p tokens
-           echo ${VAULT_ROOT_TOKEN} > tokens/${TFE_WORKSPACE}.token
+           # echo ${VAULT_ROOT_TOKEN} > tokens/${TFE_WORKSPACE}.token
            #
            # output back on
            #
-           set -x
-           echo 'Performing Terraform Init'
+        #  set -x
+        #   echo 'Performing Terraform Init'
            terraform init -no-color -input=false || true
-           terraform workspace select ${TFE_WORKSPACE}
+           terraform plan -out="plan.dev
+           terraform apply plan.dev
+        #   terraform workspace select ${TFE_WORKSPACE}
            """
       }
     }
  
-    stage('Running Terraform Plan') {
-      steps {
-        sh """
-           echo 'Performing Terraform Plan'
-           [ "${ACTION}" = "destroy" ] && terraform plan -no-color -destroy || terraform plan -no-color
-           """
-      }
-    }
+    // stage('Running Terraform Plan') {
+    //   steps {
+    //     sh """
+    //        echo 'Performing Terraform Plan'
+    //        [ "${ACTION}" = "destroy" ] && terraform plan -no-color -destroy || terraform plan -no-color
+    //        """
+    //   }
+    // }
    
-    stage("Apply Confirmation") {
-      steps{
-        input 'Proceed to apply?'
-      }
-    }
-    stage('Running Terraform Apply') {
-      steps {
-        script {
-          performAction()
-        }
-      }
-    }
+    // stage("Apply Confirmation") {
+    //   steps{
+    //     input 'Proceed to apply?'
+    //   }
+    // }
+    // stage('Running Terraform Apply') {
+    //   steps {
+    //     script {
+    //       performAction()
+    //     }
+    //   }
+    // }
   }
   post {
     always {
