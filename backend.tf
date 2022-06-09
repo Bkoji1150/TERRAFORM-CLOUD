@@ -1,9 +1,9 @@
-terraform {
-  cloud {
-    organization = "hqr-blesses"
+# terraform {
+#   cloud {
+#     organization = "hqr-blesses"
 
-    workspaces {
-      name = "hqr-auto-scaling-terraform"
-    }
-  }
-}
+#     workspaces {
+#       name = "hqr-auto-scaling-terraform"
+#     }
+#   }
+# }
