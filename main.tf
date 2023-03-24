@@ -18,7 +18,7 @@ data "aws_availability_zones" "available" {
 locals {
   amis = {
     ubuntu = {
-      ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*"
+      ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*
     }
     ec2-ami = {
       ami_name = "amzn2-ami-kernel-5.10-hvm-*"
@@ -68,7 +68,7 @@ module "redhat" {
 
   name = "redhat-${count.index + 1}"
 
-  ami                    = data.aws_ami.ami["redhat"]
+  ami                    = data.aws_ami.ami["redhat"].id
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.key.id
   monitoring             = true
