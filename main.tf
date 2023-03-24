@@ -68,7 +68,7 @@ module "redhat" {
 
   name = "redhat-${count.index + 1}"
 
-  ami                    = data.aws_ami.ami["redhat"].id
+  ami                    = data.aws_ami.ami["redhat"]
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.key.id
   monitoring             = true
