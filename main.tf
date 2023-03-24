@@ -18,7 +18,7 @@ data "aws_availability_zones" "available" {
 locals {
   amis = {
     ubuntu = {
-      ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*
+      ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*"
     }
     ec2-ami = {
       ami_name = "amzn2-ami-kernel-5.10-hvm-*"
