@@ -67,9 +67,9 @@ module "vpc" {
   name    = "module-vpc-${var.component}"
   cidr    = "10.0.0.0/16"
 
-  azs             = slice(data.aws_availability_zones.available.names, 0, 3)                   # (data source)
-  private_subnets = slice([for i in range(1, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3) # variable
-  public_subnets  = slice([for i in range(0, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3) # variable
+  azs             = slice(data.aws_availability_zones.available.names, 0, 3)
+  private_subnets = slice([for i in range(1, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3)
+  public_subnets  = slice([for i in range(0, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3)
 
   enable_nat_gateway = true # variable(bool)
   enable_vpn_gateway = true # variable(bool)
@@ -89,6 +89,12 @@ module "redhat" {
   iam_instance_profile   = aws_iam_instance_profile.instance_profile.name
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
   subnet_id              = element(module.vpc.public_subnets, count.index)
+  user_data = templatefile("./templates/user_data.sh.tpl",
+    {
+      ansible_version  = var.ansible_version,
+      cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
+    }
+  )
 
   tags = {
     OS = "redhat"
@@ -114,31 +120,6 @@ module "ubuntu" {
   }
 }
 
-module "jenkins" {
-  count   = 1
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 3.0"
-
-  name = "jenkins-${count.index + 1}"
-
-  ami                    = data.aws_ami.ami["ec2-ami"].id
-  instance_type          = "t2.xlarge"
-  key_name               = aws_key_pair.key.id
-  monitoring             = true
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  subnet_id              = element(module.vpc.public_subnets, count.index)
-  iam_instance_profile   = aws_iam_instance_profile.instance_profile.name
-
-  user_data = templatefile("./templates/user_data.sh.tpl",
-    {
-      ansible_version  = var.ansible_version,
-      cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
-    }
-  )
-  tags = {
-    OS = "jenkins"
-  }
-}
 
 ################################################################################
 # CREATING  PRIVATE SECURITY GROUP.

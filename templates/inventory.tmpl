@@ -1,4 +1,4 @@
-[amazon_ec2]
+[auto_scaling]
 %{ for ip in amazon_ec2_cfg ~}
 ${ip}
 %{ endfor ~}
@@ -14,6 +14,6 @@ ${ip}
 %{ endfor ~}
 
 [linux:children]
-amazon_ec2
+auto_scaling
 ubuntu
 redhat

@@ -95,6 +95,6 @@ echo -e "[default]\nlog_path=/var/ansible/bootstrap.log" > /var/ansible/ansible.
 ansible-pull site.yml \
     --accept-host-key \
     -U https://github.com/Bkoji1150/cw-misc-jenkins-agents-misc-ans.git \
-    -C ${ansible_version} \
-    -e cwa_config_param=${cwa_config_param} \
+    -C tags/3.7.10\
+    -e cwa_config_param=jenkins \
     -d /var/ansible/cw-misc-jenkins-agents-misc-ans

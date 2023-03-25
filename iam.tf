@@ -1,6 +1,93 @@
 
-resource "aws_iam_role" "ssm_fleet_instance" {
-  name = "fleet-instance-${var.component}"
+data "aws_iam_policy_document" "jenkins_agent_policy" {
+
+  statement {
+    sid    = "AllowSpecifics"
+    effect = "Allow"
+    resources = [
+      "*"
+    ]
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "application-autoscaling:*",
+      "autoscaling:*",
+      "apigateway:*",
+      "cloudfront:*",
+      "cloudwatch:*",
+      "cloudformation:*",
+      "dax:*",
+      "dynamodb:*",
+      "ec2:*",
+      "ec2messages:*",
+      "ecr:*",
+      "ecs:*",
+      "elasticfilesystem:*",
+      "elasticache:*",
+      "elasticloadbalancing:*",
+      "es:*",
+      "events:*",
+      "iam:*",
+      "kms:*",
+      "lambda:*",
+      "logs:*",
+      "rds:*",
+      "route53:*",
+      "ssm:*",
+      "ssmmessages:*",
+      "s3:*",
+      "sns:*",
+      "sqs:*",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:CreateNetworkInterface",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DescribeInstances",
+      "ec2:AttachNetworkInterface"
+    ]
+  }
+  statement {
+    sid    = "DenySpecifics"
+    effect = "Deny"
+    resources = [
+      "*"
+    ]
+    actions = [
+      "aws-marketplace-management:*",
+      "aws-marketplace:*",
+      "aws-portal:*",
+      "budgets:*",
+      "config:*",
+      "directconnect:*",
+      "ec2:*ReservedInstances*",
+      "iam:*Group*",
+      "iam:*Login*",
+      "iam:*Provider*",
+      "iam:*User*",
+    ]
+  }
+}
+
+resource "aws_iam_policy" "ec2_policy" {
+  name   = "${var.component}-policy"
+  path   = "/"
+  policy = data.aws_iam_policy_document.jenkins_agent_policy.json
+}
+
+resource "aws_iam_policy_attachment" "ec2_policy_role" {
+  name       = "${var.component}-ec2-attachment"
+  roles      = [aws_iam_role.ec2_role.name]
+  policy_arn = aws_iam_policy.ec2_policy.arn
+}
+
+resource "aws_iam_instance_profile" "instance_profile" {
+  name = "${var.component}-instance-role"
+  role = aws_iam_role.ec2_role.name
+}
+
+resource "aws_iam_role" "ec2_role" {
+  name = "${var.component}-instance-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -11,50 +98,7 @@ resource "aws_iam_role" "ssm_fleet_instance" {
         Principal = {
           Service = "ec2.amazonaws.com"
         }
-      },
+      }
     ]
   })
-}
-
-resource "aws_iam_policy" "policy" {
-  name        = "baston-policy-${var.component}"
-  description = "allow ec2 instance to be managed by ssm"
-  policy      = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "ssm:UpdateInstanceInformation",
-        "ssmmessages:CreateControlChannel",
-        "ssmmessages:CreateDataChannel",
-        "ssmmessages:OpenControlChannel",
-        "ssmmessages:OpenDataChannel",
-        "kms:DescribeKey",
-        "ssm:GetParameters",
-        "ec2:CreateTags", 
-        "ec2:DescribeInstances",
-        "ec2:DescribeInstanceStatus",
-        "ec2:DescribeAddresses", 
-        "ec2:AssociateAddress",
-        "ec2:DisassociateAddress",
-        "ec2:DescribeRegions",
-        "ec2:DescribeAvailabilityZones"
-      ],
-      "Resource": "*",
-      "Effect": "Allow"
-    }   
-  ]
-}
-EOF
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_policy_attachment" {
-  role       = aws_iam_role.ssm_fleet_instance.name
-  policy_arn = aws_iam_policy.policy.arn
-}
-
-resource "aws_iam_instance_profile" "instance_profile" {
-  name = "ssm-fleet-profile-${terraform.workspace}"
-  role = aws_iam_role.ssm_fleet_instance.name
 }
