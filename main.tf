@@ -193,10 +193,10 @@ resource "aws_iam_service_linked_role" "autoscaling" {
 
 resource "aws_autoscaling_group" "this" {
 
-  desired_capacity  = 4
+  desired_capacity  = 2
   health_check_type = "EC2"
   max_size          = 10
-  min_size          = 4
+  min_size          = 2
 
   name                    = "${var.component}-auto-scalling"
   service_linked_role_arn = aws_iam_service_linked_role.autoscaling.arn
