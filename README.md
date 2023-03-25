@@ -65,12 +65,15 @@ No outputs.
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## ssh to the server
-```
+```sh
 ssh -i ~/.ssh/id_rsa ec2-user@18.207.186.214
 
 vi /etc/ssh/sshd_config
 service sshd reload
 visudo
+ansible ubuntu -i ./ansible/inventory/hosts --private-key ~/.ssh/id_rsa -u ubuntu -m ping
+
+ansible all -i ./ansible/inventory/host.cfg --private-key ~/.ssh/id_rsa -u ec2-user -m ping
 ```
 ## Authors
 

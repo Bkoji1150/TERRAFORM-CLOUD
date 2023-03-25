@@ -5,7 +5,7 @@ ${ip}
 
 [ubuntu]
 %{ for ip in ubuntu_ec2_cfg ~}
-${ip}
+${ip} ${"ansible_user=ubuntu"}
 %{ endfor ~}
 
 [redhat]
@@ -15,5 +15,5 @@ ${ip}
 
 [linux:children]
 [amazon_ec2]
-[redhat]
 [ubuntu]
+[redhat]

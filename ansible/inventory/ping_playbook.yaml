@@ -1,0 +1,7 @@
+- name: Ping dynamic inventory 
+  hosts: all
+  user: ec2-user
+
+  tasks:
+    - name: ping dynamic inventory 
+      ping:
