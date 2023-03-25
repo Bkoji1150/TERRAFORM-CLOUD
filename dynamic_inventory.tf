@@ -7,5 +7,5 @@ resource "local_file" "ansible_inventory" {
       redhat_ec2_cfg ="${module.redhat.*.public_ip}"
     }
   )
-  filename = "host.cfg"
+  filename = "${path.module}/ansible/inventory/host.cfg"
 }
