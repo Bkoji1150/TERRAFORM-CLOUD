@@ -1,5 +1,5 @@
 - name: Ping dynamic inventory 
-  hosts: all
+  hosts: ubuntu
   user: ec2-user
 
   tasks:

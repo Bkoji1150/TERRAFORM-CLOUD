@@ -1,5 +1,7 @@
 
 resource "local_file" "ansible_inventory" {
+  depends_on = [data.aws_instances.this, module.ubuntu, module.redhat]
+
   content = templatefile("${path.module}/templates/inventory.tmpl",
     {
       amazon_ec2_cfg = "${data.aws_instances.this.public_ips}",

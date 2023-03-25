@@ -1,0 +1,12 @@
+--- 
+
+- hosts: 
+  gather_facts: no 
+  become_user: root 
+  become_method: sudo 
+
+  tasks:
+
+  - name: Set hostname to `hostname` variable 
+    hostname:
+      name: "{{ hostname }}"
