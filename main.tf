@@ -182,72 +182,152 @@ resource "aws_ssm_parameter" "ssh_key" {
 ##############################
 # CREATING LAUNCH_TEMPLATE
 ##############################
-resource "aws_launch_template" "app1_lauch_template" {
+# resource "aws_launch_template" "app1_lauch_template" {
 
-  name                   = "${var.component}-app1-launch-template"
-  description            = "This is a template for the application"
-  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  image_id               = data.aws_ami.ami["ec2-ami"].id
-  instance_type          = var.instance_type
+#   name                   = "${var.component}-app1-launch-template"
+#   description            = "This is a template for the application"
+#   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
+#   image_id               = data.aws_ami.ami["ec2-ami"].id
+#   instance_type          = var.instance_type
 
-  key_name = aws_key_pair.key.id
-  iam_instance_profile {
+#   key_name = aws_key_pair.key.id
+#   iam_instance_profile {
 
-    arn = aws_iam_instance_profile.instance_profile.arn
-  }
-  block_device_mappings {
-    device_name = "/dev/sda1"
-    ebs {
-      volume_size           = 20
-      delete_on_termination = true
-      volume_type           = "gp2"
-    }
-  }
+#     arn = aws_iam_instance_profile.instance_profile.arn
+#   }
+#   block_device_mappings {
+#     device_name = "/dev/sda1"
+#     ebs {
+#       volume_size           = 20
+#       delete_on_termination = true
+#       volume_type           = "gp2"
+#     }
+#   }
 
-  user_data = base64encode(
-    templatefile(
-      "./templates/user_data.sh.tpl",
-      {
-        ansible_version  = var.ansible_version,
-        cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
-      }
-    )
-  )
-  credit_specification {
-    cpu_credits = "standard"
-  }
-  ebs_optimized = true
-  instance_market_options {
-    market_type = "spot"
-  }
-  monitoring {
-    enabled = true
-  }
-  tag_specifications {
-    resource_type = "instance"
-    tags = {
-      Name = "${var.component}-app1-launch-template"
-      OS   = "amazon-ec2"
-    }
+#   user_data = base64encode(
+#     templatefile(
+#       "./templates/user_data.sh.tpl",
+#       {
+#         ansible_version  = var.ansible_version,
+#         cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
+#       }
+#     )
+#   )
+#   credit_specification {
+#     cpu_credits = "standard"
+#   }
+#   ebs_optimized = true
+#   instance_market_options {
+#     market_type = "spot"
+#   }
+#   monitoring {
+#     enabled = true
+#   }
+#   tag_specifications {
+#     resource_type = "instance"
+#     tags = {
+#       Name = "${var.component}-app1-launch-template"
+#       OS   = "amazon-ec2"
+#     }
+#   }
+# }
+
+# resource "aws_autoscaling_group" "app1_asg" {
+
+#   name             = "${var.component}-jenkin-asg"
+#   desired_capacity = 2
+#   max_size         = 8
+#   min_size         = 2
+
+#   vpc_zone_identifier = module.vpc.public_subnets
+#   health_check_type   = "EC2"
+#   #target_group_arns = [aws_lb_target_group.app1.arn]
+
+#   launch_template {
+#     id      = aws_launch_template.app1_lauch_template.id
+#     version = aws_launch_template.app1_lauch_template.latest_version
+#   }
+
+#   initial_lifecycle_hook {
+#     default_result       = "CONTINUE"
+#     heartbeat_timeout    = 60
+#     lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING"
+#     name                 = "ExampleStartupLifeCycleHook"
+#     notification_metadata = jsonencode(
+#       {
+#         hello = "world"
+#       }
+#     )
+#   }
+#   initial_lifecycle_hook {
+#     default_result       = "CONTINUE"
+#     heartbeat_timeout    = 180
+#     lifecycle_transition = "autoscaling:EC2_INSTANCE_TERMINATING"
+#     name                 = "ExampleTerminationLifeCycleHook"
+#     notification_metadata = jsonencode(
+#       {
+#         hello = "world"
+#       }
+#     )
+#   }
+
+#   tag {
+#     key                 = "component"
+#     value               = var.component
+#     propagate_at_launch = true
+#   }
+
+#   instance_refresh {
+#     strategy = "Rolling"                               # UPDATE 
+#     triggers = ["tag", "desired_capacity", "max_size"] # 
+
+#     preferences {
+#       min_healthy_percentage = 50
+#     }
+#   }
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+#   enabled_metrics = var.enabled_metrics
+# }
+resource "aws_iam_service_linked_role" "autoscaling" {
+  aws_service_name = "autoscaling.amazonaws.com"
+  description      = "A service linked role for autoscaling"
+  custom_suffix    = var.component
+
+  provisioner "local-exec" {
+    command = "sleep 10"
   }
 }
 
-resource "aws_autoscaling_group" "app1_asg" {
 
-  name             = "${var.component}-jenkin-asg"
-  desired_capacity = 2
-  max_size         = 8
-  min_size         = 2
+resource "aws_autoscaling_group" "this" {
+
+  desired_capacity  = 2
+  health_check_type = "EC2"
+  max_size          = 10
+  min_size          = 2
+
+  name                    = "${var.component}-auto-scalling"
+  service_linked_role_arn = aws_iam_service_linked_role.autoscaling.arn
 
   vpc_zone_identifier = module.vpc.public_subnets
-  health_check_type   = "EC2"
-  #target_group_arns = [aws_lb_target_group.app1.arn]
 
   launch_template {
-    id      = aws_launch_template.app1_lauch_template.id
-    version = aws_launch_template.app1_lauch_template.latest_version
+    id      = aws_launch_template.registration_app.id
+    version = aws_launch_template.registration_app.latest_version
   }
-
+  initial_lifecycle_hook {
+    default_result       = "CONTINUE"
+    heartbeat_timeout    = 180
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_TERMINATING"
+    name                 = "ExampleTerminationLifeCycleHook"
+    notification_metadata = jsonencode(
+      {
+        goodbye = "world"
+      }
+    )
+  }
   initial_lifecycle_hook {
     default_result       = "CONTINUE"
     heartbeat_timeout    = 60
@@ -259,34 +339,72 @@ resource "aws_autoscaling_group" "app1_asg" {
       }
     )
   }
-  initial_lifecycle_hook {
-    default_result       = "CONTINUE"
-    heartbeat_timeout    = 180
-    lifecycle_transition = "autoscaling:EC2_INSTANCE_TERMINATING"
-    name                 = "ExampleTerminationLifeCycleHook"
-    notification_metadata = jsonencode(
-      {
-        hello = "world"
-      }
-    )
+  instance_refresh {
+    strategy = "Rolling"
+    triggers = [
+      "desired_capacity",
+      "tag", "max_size",
+    ]
+
+    preferences {
+      min_healthy_percentage = 50
+      skip_matching          = false
+    }
   }
 
+  timeouts {}
   tag {
     key                 = "component"
     value               = var.component
     propagate_at_launch = true
   }
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
-  instance_refresh {
-    strategy = "Rolling"                               # UPDATE 
-    triggers = ["tag", "desired_capacity", "max_size"] # 
+resource "aws_launch_template" "registration_app" {
 
-    preferences {
-      min_healthy_percentage = 50
+  name          = format("%s-%s", var.component, "auto-scalling-group")
+  description   = "This  Launch template hold configuration for registration app"
+  image_id      = data.aws_ami.ami["ec2-ami"].id
+  instance_type = var.instance_type
+  iam_instance_profile {
+    name = aws_iam_instance_profile.instance_profile.name
+  }
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
+
+  user_data = base64encode(
+    templatefile(
+      "./templates/user_data.sh.tpl",
+      {
+        ansible_version  = var.ansible_version,
+        cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
+      }
+    )
+  )
+  ebs_optimized = true
+
+  update_default_version = true
+  block_device_mappings {
+    device_name = "/dev/sda1"
+    ebs {
+      volume_size           = 20
+      delete_on_termination = true
+      volume_type           = "gp2"
+    }
+  }
+  monitoring {
+    enabled = true
+  }
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "${var.component}-app1-launch-template"
+      OS   = "amazon-ec2"
     }
   }
   lifecycle {
     create_before_destroy = true
   }
-  enabled_metrics = var.enabled_metrics
 }
