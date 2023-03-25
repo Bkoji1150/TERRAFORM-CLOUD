@@ -187,7 +187,7 @@ resource "aws_launch_template" "app1_lauch_template" {
   name                   = "${var.component}-app1-launch-template"
   description            = "This is a template for the application"
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  image_id               = data.aws_ami.ami["redhat"].id
+  image_id               = data.aws_ami.ami["ec2-ami"].id
   instance_type          = var.instance_type
 
   key_name = aws_key_pair.key.id
@@ -235,7 +235,7 @@ resource "aws_launch_template" "app1_lauch_template" {
 resource "aws_autoscaling_group" "app1_asg" {
 
   name             = "${var.component}-jenkin-asg"
-  desired_capacity = 3
+  desired_capacity = 2
   max_size         = 8
   min_size         = 2
 
