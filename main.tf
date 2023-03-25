@@ -206,7 +206,7 @@ resource "aws_launch_template" "app1_lauch_template" {
   name                   = "${var.component}-app1-launch-template"
   description            = "This is a template for the application"
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  image_id               = data.aws_ami.ami["redhat-8"].id
+  image_id               = data.aws_ami.ami["redhat"].id
   instance_type          = var.instance_type
 
   key_name = aws_key_pair.key.id

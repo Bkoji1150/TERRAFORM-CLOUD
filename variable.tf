@@ -33,7 +33,7 @@ variable "asg_desired_capacity" {
 variable "instance_type" {
   description = "The type of the instance to launch"
   type        = string
-  default     = "t3.xlarge"
+  default     = "t2.xlarge"
 }
 
 variable "ansible_version" {
