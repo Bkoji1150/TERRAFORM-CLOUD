@@ -4,7 +4,7 @@ resource "local_file" "ansible_inventory" {
     {
       amazon_ec2_cfg = "${data.aws_instances.this.public_ips}",
       ubuntu_ec2_cfg = "${module.ubuntu.*.public_ip}",
-      redhat_ec2_cfg ="${module.redhat.*.public_ip}"
+      redhat_ec2_cfg = "${module.redhat.*.public_ip}"
     }
   )
   filename = "${path.module}/ansible/inventory/host.cfg"
