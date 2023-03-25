@@ -135,7 +135,7 @@ resource "aws_security_group" "jenkins_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["73.135.155.78/32"]
   }
   ingress {
     description = "allow inboun from from jenkins server"
@@ -149,7 +149,7 @@ resource "aws_security_group" "jenkins_sg" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["73.135.155.78/32"]
   }
 }
 
