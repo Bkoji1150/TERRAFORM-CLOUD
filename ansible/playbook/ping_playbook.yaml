@@ -1,5 +1,5 @@
 - name: Ping dynamic inventory 
-  hosts: redhat
+  hosts: auto_scaling
   user: ec2-user
   vars:
     authorized_key_list:
