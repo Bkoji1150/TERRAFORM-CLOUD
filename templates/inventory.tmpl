@@ -1,6 +1,6 @@
 [amazon_ec2]
 %{ for ip in amazon_ec2_cfg ~}
-${ip} ${"ansible_user=root"}
+${ip}
 %{ endfor ~}
 
 [ubuntu]
