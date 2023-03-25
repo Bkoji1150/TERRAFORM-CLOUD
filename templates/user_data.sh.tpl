@@ -37,8 +37,7 @@ mkdir /opt/maven && cd /opt/maven
 wget https://mirror.lyrahosting.com/apache/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
 tar -xvzf apache-maven-3.8.7-bin.tar.gz
 
-echo 'M2_HOME=/opt/maven/apache-maven-3.8.7/bin' >> ~/.bash_profile
-echo 'export PATH=$PATH:$HOME/bin:$M2_HOME' >> ~/.bash_profile
+echo 'M2_HOME=/opt/maven/apache-maven-3.8.7/bin\nxport PATH=$PATH:$HOME/bin:$M2_HOME' >> ~/.bash_profile
 sudo source ~/.bash_profile
 
 sudo useradd ansible
