@@ -1,0 +1,12 @@
+- name: Ping dynamic inventory 
+  hosts: linux
+  user: ec2-user
+  vars:
+    authorized_key_list:
+      - name: root
+        authorized_keys:
+         - key: "{{ lookup('aws_ssm', 'jenkins-agent-bootstrap-ssh-key', region='us-east-1') }}"
+           state: present
+  tasks:
+    - name: ping dynamic inventory 
+      ping:

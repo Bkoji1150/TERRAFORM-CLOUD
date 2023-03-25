@@ -1,6 +1,8 @@
 [amazon_ec2]
-54.198.172.3
-44.211.88.242
+3.95.227.204
+54.172.198.52
+44.192.37.71
+34.203.221.197
 
 [ubuntu]
 54.81.180.88 ansible_user=ubuntu
@@ -11,6 +13,6 @@
 44.200.119.86
 
 [linux:children]
-[amazon_ec2]
-[ubuntu]
-[redhat]
+amazon_ec2
+ubuntu
+redhat

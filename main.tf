@@ -19,6 +19,9 @@ locals {
     redhat = {
       ami_name = "RHEL-9.0.0_HVM-*"
     }
+    redhat-8 = {
+      ami_name = "RHEL_8.6-x86_64-SQL_2022_Standard-*"
+    }
   }
 }
 
@@ -203,7 +206,7 @@ resource "aws_launch_template" "app1_lauch_template" {
   name                   = "${var.component}-app1-launch-template"
   description            = "This is a template for the application"
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  image_id               = data.aws_ami.ami["ec2-ami"].id
+  image_id               = data.aws_ami.ami["redhat-8"].id
   instance_type          = var.instance_type
 
   key_name = aws_key_pair.key.id
@@ -220,15 +223,15 @@ resource "aws_launch_template" "app1_lauch_template" {
     }
   }
 
-  # user_data = base64encode(
-  #   templatefile(
-  #     "./templates/user_data.sh.tpl",
-  #     {
-  #       ansible_version  = var.ansible_version,
-  #       cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
-  #     }
-  #   )
-  # )
+  user_data = base64encode(
+    templatefile(
+      "./templates/user_data.sh.tpl",
+      {
+        ansible_version  = var.ansible_version,
+        cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
+      }
+    )
+  )
   credit_specification {
     cpu_credits = "standard"
   }
@@ -251,9 +254,9 @@ resource "aws_launch_template" "app1_lauch_template" {
 resource "aws_autoscaling_group" "app1_asg" {
 
   name             = "${var.component}-jenkin-asg"
-  desired_capacity = 4
+  desired_capacity = 2
   max_size         = 8
-  min_size         = 1
+  min_size         = 2
 
   vpc_zone_identifier = module.vpc.public_subnets
   health_check_type   = "EC2"
