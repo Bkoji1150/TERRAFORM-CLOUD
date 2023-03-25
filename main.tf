@@ -235,7 +235,7 @@ resource "aws_launch_template" "app1_lauch_template" {
 resource "aws_autoscaling_group" "app1_asg" {
 
   name             = "${var.component}-jenkin-asg"
-  desired_capacity = 2
+  desired_capacity = 3
   max_size         = 8
   min_size         = 2
 
