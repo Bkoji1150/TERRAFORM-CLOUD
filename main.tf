@@ -9,13 +9,6 @@ locals {
     Environment             = "dev"
     Security_Classification = "Internal"
   }
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-locals {
   amis = {
     ubuntu = {
       ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*"
@@ -27,6 +20,24 @@ locals {
       ami_name = "RHEL-9.0.0_HVM-*"
     }
   }
+}
+
+data "aws_instances" "this" {
+
+  filter {
+    name   = "tag:Name"
+    values = ["devops-app1-launch-template"]
+  }
+  filter {
+    name   = "tag:OS"
+    values = ["amazon-ec2"]
+  }
+
+  instance_state_names = ["running"]
+}
+
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
 data "aws_ami" "ami" {
@@ -184,7 +195,7 @@ resource "aws_ssm_parameter" "ssh_key" {
   value       = file(var.private_key_path)
 }
 
-### ############################## 
+##############################
 # CREATING LAUNCH_TEMPLATE
 ##############################
 resource "aws_launch_template" "app1_lauch_template" {
@@ -240,7 +251,7 @@ resource "aws_launch_template" "app1_lauch_template" {
 resource "aws_autoscaling_group" "app1_asg" {
 
   name             = "${var.component}-jenkin-asg"
-  desired_capacity = 1
+  desired_capacity = 2
   max_size         = 8
   min_size         = 1
 

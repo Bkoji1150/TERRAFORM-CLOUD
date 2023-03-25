@@ -1,0 +1,19 @@
+[amazon_ec2]
+%{ for ip in amazon_ec2_cfg ~}
+${ip}
+%{ endfor ~}
+
+[ubuntu]
+%{ for ip in ubuntu_ec2_cfg ~}
+${ip}
+%{ endfor ~}
+
+[redhat]
+%{ for ip in redhat_ec2_cfg ~}
+${ip}
+%{ endfor ~}
+
+[linux:children]
+[amazon_ec2]
+[redhat]
+[ubuntu]
