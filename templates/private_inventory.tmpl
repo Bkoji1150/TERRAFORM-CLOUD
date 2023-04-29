@@ -1,0 +1,19 @@
+[auto_scaling]
+%{ for ip in amazon_hostname ~}
+${ip}
+%{ endfor ~}
+
+[ubuntu]
+%{ for ip in ubuntu_hostname ~}
+${ip} ${"ansible_user=ubuntu"}
+%{ endfor ~}
+
+[redhat]
+%{ for ip in redhat_hostname~}
+${ip}
+%{ endfor ~}
+
+[linux:children]
+auto_scaling
+ubuntu
+redhat

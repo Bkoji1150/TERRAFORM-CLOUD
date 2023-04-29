@@ -12,3 +12,17 @@ resource "local_file" "ansible_inventory" {
   )
   filename = "${path.module}/ansible/inventory/hosts"
 }
+
+resource "local_file" "ansible_inventory_private" {
+  count = length(module.ubuntu.*.private_ip) > 0 || length(module.redhat.*.private_ip) > 0 ? 1 : 0
+
+  depends_on = [aws_launch_template.registration_app, aws_autoscaling_group.this, module.ubuntu, module.redhat, data.aws_instances.this]
+  content = templatefile("${path.module}/templates/private_inventory.tmpl",
+    {
+      amazon_hostname = "${data.aws_instances.this.private_ips}",
+      ubuntu_hostname = "${module.ubuntu.*.tags_all[*].Name}",
+      redhat_hostname = "${module.redhat.*.tags_all[*].Name}"
+    }
+  )
+  filename = "${path.module}/ansible/inventory/privatehosts"
+}

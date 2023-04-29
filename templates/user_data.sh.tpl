@@ -1,64 +1,3 @@
-#!/bin/bash
-# Installing JAVA && Jenkins 
-sudo yum update –y
-sudo yum install java-11-amazon-corretto-headless -y 
-sudo yum remove java-17-amazon-corretto-headless -y
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-sudo yum upgrade
-sudo amazon-linux-extras install java-openjdk11 -y
-sudo yum install jenkins -y
-# Start jenkins service
-sudo systemctl enable jenkins
-sudo systemctl start jenkins
-sudo systemctl status jenkins
-# Setup Jenkins to start at boot
-sudo yum install git -y
-sudo yum install python
-sudo yum install python-pip
-pip3 install ansible
-# Installing Docker 
-yum install docker -y
-service docker start
-sudo useradd dockeradmin
-# sudo passwd dockeradmin TODO LIST
-sudo usermod -aG docker dockeradmin
-sudo usermod -aG docker jenkins
-sudo chmod 777 /var/run/docker.sock
-# install Sonarqube scanner
-mkdir sonnar-canna && cd sonnar-canna
-sudo unzip sonar-scanner-cli-4.6.2.2472-linux.zip
-sudo mv sonar-scanner-4.6.2.2472-linux  sonar-scanner-cli
-sudo mv sonar-scanner-cli /opt/sonar/
-wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-# Installing maven
-sudo su
-mkdir /opt/maven && cd /opt/maven
-wget https://mirror.lyrahosting.com/apache/maven/maven-3/3.8.7/binaries/apache-maven-3.8.7-bin.tar.gz
-tar -xvzf apache-maven-3.8.7-bin.tar.gz
-
-echo 'M2_HOME=/opt/maven/apache-maven-3.8.7/bin\nxport PATH=$PATH:$HOME/bin:$M2_HOME' >> ~/.bash_profile
-sudo source ~/.bash_profile
-
-sudo useradd ansible
-sudo useradd jenkins
-sudo -u jenkins mkdir /home/jenkins.ssh
-# install groovy 
-sudo mkdir /usr/share/groovy
-sudo wget wget https://archive.apache.org/dist/groovy/4.0.0-rc-1/distribution/apache-groovy-binary-4.0.0-rc-1.zip
-unzip apache-groovy-binary-4.0.0-rc-1.zip
-yum install groovy -y
-# sudo echo "ansible ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers
-sudo mkdir -p /var/ansible/cw-misc-jenkins-agents-misc-ans
-sudo yum -y install git ansible python3-pip
-sudo pip3 install awscli boto3 botocore --upgrade --user
-pip3 install boto3 && pip3 install botocore
-
-#export PATH=/usr/local/bin:$PATH
-# install taraform 
-sudo yum install -y yum-utils
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-sudo yum -y install terraform
 ## Install helm
 sudo curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 sudo chmod 700 get_helm.sh
@@ -79,22 +18,9 @@ sudo yum -y install git ansible python3-pip
 sudo pip3 install awscli boto3 botocore --upgrade --user
 sudo pip3 install awscli boto3 botocore --upgrade --user
 
-aws ssm get-parameters \
-    --output=text \
-    --region us-east-1 \
-    --with-decryption \
-    --names jenkins-agent-bootstrap-ssh-key \
-    --query "Parameters[*].{Value:Value}[0].Value" > private-key /var/ansible/private-key
-chmod 0600 /var/ansible/private-key
-eval "$(ssh-agent -s)"
-ssh-add /var/ansible/private-key
-export ANSIBLE_CONFIG=/var/ansible/ansible.cfg
-export ANSIBLE_LOG_PATH=/var/ansible/bootstrap.log
-echo -e "[default]\nlog_path=/var/ansible/bootstrap.log" > /var/ansible/ansible.cfg
-
 ansible-pull site.yml \
-    --accept-host-key \
-    -U https://github.com/Bkoji1150/cw-misc-jenkins-agents-misc-ans.git \
-    -C tags/3.7.10\
-    -e cwa_config_param=jenkins \
-    -d /var/ansible/cw-misc-jenkins-agents-misc-ans
+    -U https://${github_token}@github.com/Bkoji1150/c2o-web-app-configuration-on-rhel \
+    -C feature/aws-enhancement \
+    -e hostname="${hostname}" \
+    -e server_zr="America/New_York" \
+    -d /var/ansible/c2o-web-app-configuration-on-rhel

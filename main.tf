@@ -1,14 +1,22 @@
-locals {
-  tags = {
-    name                    = "Jenkinsagent"
-    Created_by              = "Terraform"
-    App_Name                = "ovid"
-    Cost_center             = "xyz222"
-    Business_unit           = "Automation"
-    App_role                = "web_server"
-    Environment             = "dev"
-    Security_Classification = "Internal"
+
+data "terraform_remote_state" "operational_environment" {
+  backend = "s3"
+
+  config = {
+    region = "us-east-1"
+    bucket = "operational.vpc.kojitechs"
+    key    = format("env:/%s/path/env", terraform.workspace)
   }
+}
+
+locals {
+  operational_state = data.terraform_remote_state.operational_environment.outputs
+  vpc_id            = local.operational_state.vpc_id
+  public_subnet     = local.operational_state.public_subnets
+  private_subnets   = local.operational_state.private_subnets
+  github_token      = jsondecode(local.operational_state.secrets_version["githubtoken"])["githubtoken"]
+  hostname_prefix   = "${var.environment_purpose_code_map[var.environment_purpose]}atlc2o${var.environment_code_map_name[terraform.workspace]}${format("%02d", var.environment_number)}a"
+
   amis = {
     ubuntu = {
       ami_name = "ubuntu/images/hvm-ssd/ubuntu-jammy-*"
@@ -23,6 +31,24 @@ locals {
       ami_name = "RHEL_8.6-x86_64-SQL_2022_Standard-*"
     }
   }
+}
+
+
+module "required_tags" {
+  source = "git::https://github.com/Bkoji1150/kojitechs-tf-aws-required-tags.git?ref=v1.0.0"
+
+  line_of_business        = var.line_of_business
+  ado                     = var.ado
+  tier                    = var.tier
+  operational_environment = upper(terraform.workspace)
+  tech_poc_primary        = var.tech_poc_primary
+  tech_poc_secondary      = var.builder
+  application             = var.application
+  builder                 = var.builder
+  application_owner       = var.application_owner
+  vpc                     = var.vpc
+  cell_name               = var.cell_name
+  component_name          = var.component_name
 }
 
 data "aws_instances" "this" {
@@ -61,27 +87,12 @@ data "aws_ami" "ami" {
   }
 }
 
-module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-
-  version = ">= v3.19.0"
-  name    = "module-vpc-${var.component}"
-  cidr    = "10.0.0.0/16"
-
-  azs             = slice(data.aws_availability_zones.available.names, 0, 3)
-  private_subnets = slice([for i in range(1, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3)
-  public_subnets  = slice([for i in range(0, 225, 2) : cidrsubnet("10.0.0.0/16", 8, i)], 0, 3)
-
-  enable_nat_gateway = true # variable(bool)
-  enable_vpn_gateway = true # variable(bool)
-}
-
 module "redhat" {
   count   = 2
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 3.0"
 
-  name = "redhat-${count.index + 1}"
+  name = "${local.hostname_prefix}${format("%02d", count.index + 1)}redhat"
 
   ami                    = data.aws_ami.ami["redhat"].id
   instance_type          = "t2.micro"
@@ -89,17 +100,14 @@ module "redhat" {
   monitoring             = true
   iam_instance_profile   = aws_iam_instance_profile.instance_profile.name
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  subnet_id              = element(module.vpc.public_subnets, count.index)
+  subnet_id              = element(local.public_subnet, count.index)
   user_data = templatefile("./templates/user_data.sh.tpl",
     {
-      ansible_version  = var.ansible_version,
-      cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
+      github_token = local.github_token
+      hostname     = "${local.hostname_prefix}${format("%02d", count.index + 1)}redhat"
     }
   )
-
-  tags = {
-    OS = "redhat"
-  }
+  tags = merge(module.required_tags.tags, { OS = "redhat" })
 }
 
 module "ubuntu" {
@@ -107,29 +115,32 @@ module "ubuntu" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 3.0"
 
-  name = "ubuntu-${count.index + 1}"
+  name = "${local.hostname_prefix}${format("%02d", count.index + 1)}ubuntu"
 
   ami                    = data.aws_ami.ami["ubuntu"].id
   instance_type          = "t2.xlarge"
   key_name               = aws_key_pair.key.id
   monitoring             = true
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  subnet_id              = element(module.vpc.public_subnets, count.index)
-
-  tags = {
-    OS = "ubuntu"
-  }
+  subnet_id              = element(local.public_subnet, count.index)
+  user_data = templatefile("./templates/user_data.sh.tpl",
+    {
+      github_token = local.github_token
+      hostname     = "${local.hostname_prefix}${format("%02d", count.index + 1)}redhat"
+    }
+  )
+  tags = merge(module.required_tags.tags, { OS = "ubuntu" })
 }
 
 
-################################################################################
-# CREATING  PRIVATE SECURITY GROUP.
-################################################################################
+# ################################################################################
+# # CREATING  PRIVATE SECURITY GROUP.
+# ################################################################################
 
 resource "aws_security_group" "jenkins_sg" {
   name        = "static-sg-${terraform.workspace}"
   description = "Allow inboun from from alb security group id"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = local.vpc_id
 
   ingress {
     description = "allow inboun from from private host mechine"
@@ -183,7 +194,7 @@ resource "aws_ssm_parameter" "ssh_key" {
 resource "aws_iam_service_linked_role" "autoscaling" {
   aws_service_name = "autoscaling.amazonaws.com"
   description      = "A service linked role for autoscaling"
-  custom_suffix    = var.component
+  custom_suffix    = var.component_name
 
   provisioner "local-exec" {
     command = "sleep 10"
@@ -198,10 +209,10 @@ resource "aws_autoscaling_group" "this" {
   max_size          = 10
   min_size          = 2
 
-  name                    = "${var.component}-auto-scalling"
+  name                    = "${var.component_name}-auto-scalling"
   service_linked_role_arn = aws_iam_service_linked_role.autoscaling.arn
 
-  vpc_zone_identifier = module.vpc.public_subnets
+  vpc_zone_identifier = local.public_subnet
 
   launch_template {
     id      = aws_launch_template.registration_app.id
@@ -245,7 +256,7 @@ resource "aws_autoscaling_group" "this" {
   timeouts {}
   tag {
     key                 = "component"
-    value               = var.component
+    value               = var.component_name
     propagate_at_launch = true
   }
   lifecycle {
@@ -255,9 +266,9 @@ resource "aws_autoscaling_group" "this" {
 
 resource "aws_launch_template" "registration_app" {
 
-  name          = format("%s-%s", var.component, "auto-scalling-group")
+  name          = "${local.hostname_prefix}auto-scalling-group"
   description   = "This  Launch template hold configuration for registration app"
-  image_id      = data.aws_ami.ami["ec2-ami"].id
+  image_id      = data.aws_ami.ami["redhat-8"].id
   instance_type = var.instance_type
   key_name      = aws_key_pair.key.id
   iam_instance_profile {
@@ -265,15 +276,15 @@ resource "aws_launch_template" "registration_app" {
   }
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 
-  user_data = base64encode(
-    templatefile(
-      "./templates/user_data.sh.tpl",
-      {
-        ansible_version  = var.ansible_version,
-        cwa_config_param = aws_ssm_parameter.cloudwatch_agent.name
-      }
-    )
-  )
+  # user_data = base64encode(
+  #   templatefile(
+  #     "./templates/user_data.sh.tpl",
+  #     {
+  #     github_token  = local.github_token
+  #     hostname = "${local.hostname_prefix}${format("%02d", count.index + 1)}auto-scaling" 
+  #   }
+  #   )
+  # )
   ebs_optimized = true
 
   update_default_version = true
@@ -282,7 +293,7 @@ resource "aws_launch_template" "registration_app" {
     ebs {
       volume_size           = 20
       delete_on_termination = true
-      volume_type           = "gp2"
+      volume_type           = "gp3"
     }
   }
   monitoring {
@@ -290,10 +301,8 @@ resource "aws_launch_template" "registration_app" {
   }
   tag_specifications {
     resource_type = "instance"
-    tags = {
-      Name = "${var.component}-app1-launch-template"
-      OS   = "amazon-ec2"
-    }
+    tags          = merge(module.required_tags.tags, { OS = "amazon-ec2", Name = "${var.component_name}launch-template" })
+
   }
   lifecycle {
     create_before_destroy = true

@@ -69,24 +69,24 @@ data "aws_iam_policy_document" "jenkins_agent_policy" {
 }
 
 resource "aws_iam_policy" "ec2_policy" {
-  name   = "${var.component}-policy"
+  name   = "${var.component_name}-policy"
   path   = "/"
   policy = data.aws_iam_policy_document.jenkins_agent_policy.json
 }
 
 resource "aws_iam_policy_attachment" "ec2_policy_role" {
-  name       = "${var.component}-ec2-attachment"
+  name       = "${var.component_name}-ec2-attachment"
   roles      = [aws_iam_role.ec2_role.name]
   policy_arn = aws_iam_policy.ec2_policy.arn
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
-  name = "${var.component}-instance-role"
+  name = "${var.component_name}-instance-role"
   role = aws_iam_role.ec2_role.name
 }
 
 resource "aws_iam_role" "ec2_role" {
-  name = "${var.component}-instance-role"
+  name = "${var.component_name}-instance-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
