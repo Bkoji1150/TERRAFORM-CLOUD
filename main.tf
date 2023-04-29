@@ -85,10 +85,6 @@ data "aws_ami" "ami" {
     name   = "root-device-type"
     values = ["ebs"]
   }
-  filter {
-    name   = "Architecture"
-    values = ["x86_64"]
-  }
 }
 
 module "redhat" {
@@ -121,7 +117,7 @@ module "ubuntu" {
 
   name = "${local.hostname_prefix}${format("%02d", count.index + 1)}ubuntu"
 
-  ami                    = data.aws_ami.ami["ubuntu"].id
+  ami                    = "ami-007855ac798b5175e"
   instance_type          = "t2.xlarge"
   key_name               = aws_key_pair.key.id
   monitoring             = true
