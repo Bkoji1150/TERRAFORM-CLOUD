@@ -85,6 +85,10 @@ data "aws_ami" "ami" {
     name   = "root-device-type"
     values = ["ebs"]
   }
+  filter {
+    name   = "Architecture"
+    values = ["x86_64"]
+  }
 }
 
 module "redhat" {
